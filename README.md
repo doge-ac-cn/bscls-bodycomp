@@ -45,6 +45,22 @@ data/raw/
     └── master_table_nsclc_radiogenomics.csv
 ```
 
+**Automated clinical download** — `download_tcia.py` fetches imaging only;
+the clinical spreadsheets are hosted separately on the TCIA website. Run
+
+```bash
+python scripts/download_clinical.py   # downloads both official CSVs and derives the two auxiliary tables
+```
+
+`download_clinical.py` fetches the two official files (Lung1 clinical v3 and
+the RG R01 labels spreadsheet), renames the RG `Case ID` column to
+`Patient ID` (the name every downstream script expects), and derives
+`master_table_nsclc_radiogenomics.csv` / `sarg_patients.parquet` from the
+official labels — those two auxiliary tables are a lossless column subset of
+the VA-R01 labels file, so they are regenerated instead of requiring a
+manual download that is no longer exposed on the TCIA website. Use
+`--force` to re-download everything.
+
 ## Requirements
 
 - Python ≥ 3.10
@@ -93,12 +109,13 @@ Run the steps in order from the repository root. Each script writes to
 ### 1. Clinical master table
 
 ```bash
-python scripts/prepare_clinical_build.py   # merge official spreadsheets -> data/clinical_master.csv
-python scripts/prepare_clinical_time.py    # encode OS/RFS time-to-event in days
-python scripts/prepare_clinical_v3.py      # fix stage semantics, recover weight, add official fields
-python scripts/prepare_clinical_fix.py     # fix ALK mapping and AMC-049 recurrence mis-entry
-python scripts/verify_clinical_data.py     # consistency checks vs official sources
-python scripts/verify_official_missing.py  # per-field missing-value audit vs official files
+python scripts/download_clinical.py       # official clinical spreadsheets from TCIA (auto)
+python scripts/prepare_clinical_build.py  # merge official spreadsheets -> data/clinical_master.csv
+python scripts/prepare_clinical_time.py   # encode OS/RFS time-to-event in days
+python scripts/prepare_clinical_v3.py     # fix stage semantics, recover weight, add official fields
+python scripts/prepare_clinical_fix.py    # fix ALK mapping and AMC-049 recurrence mis-entry
+python scripts/verify_clinical_data.py    # consistency checks vs official sources
+python scripts/verify_official_missing.py # per-field missing-value audit vs official files
 ```
 
 ### 2. CT series selection and segmentation

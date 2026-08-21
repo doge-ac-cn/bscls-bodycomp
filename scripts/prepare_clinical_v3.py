@@ -56,6 +56,21 @@ def main():
     va = pd.read_csv(VA)
     l1 = pd.read_csv(L1)
 
+    # Make the script idempotent: drop columns this step regenerates so a
+    # re-run over its own output does not create *_x/*_y merge collisions.
+    for c in ["weight_kg_va", "days_ct_to_surgery",
+              "lung1_t_stage", "lung1_n_stage", "lung1_m_stage", "lung1_stage_detail",
+              "patient_id_r01", "rg_pt", "rg_pn", "rg_pm", "rg_grade", "rg_lvi",
+              "rg_pleural_invasion", "rg_adjuvant", "rg_chemotherapy", "rg_radiation",
+              "rg_recurrence_location", "ethnicity", "pct_gg", "pack_years",
+              "quit_smoking_year", "ct_date", "pet_date", "date_of_recurrence",
+              "date_of_last_alive", "date_of_death"]:
+        if c in m.columns:
+            m = m.drop(columns=[c])
+    # Also strip merge-suffix leftovers from previous runs (_va/_x/_y).
+    m = m.loc[:, [c for c in m.columns
+                  if not (c.endswith("_va") or c.endswith("_x") or c.endswith("_y"))]]
+
     # ---- RG field completion (VA-R01-labels as source) ----
     # VA Patient ID maps 1:1 to master patient_id (49 AMC-xxx + 162 R01-xxx)
     va["patient_id"] = va["Patient ID"].astype(str).str.strip()
@@ -79,12 +94,13 @@ def main():
     va["rg_radiation"] = va["Radiation"].apply(na)
     va["rg_recurrence_location"] = va["Recurrence Location"].apply(na)
     va["ethnicity"] = va["Ethnicity"].apply(na)
+    va["days_ct_to_surgery"] = pd.to_numeric(va["Days between CT and surgery"].apply(na), errors="coerce")
 
     rg_cols = ["patient_id", "weight_kg", "ct_date", "pet_date",
                "date_of_recurrence", "date_of_last_alive", "date_of_death", "pct_gg",
                "pack_years", "quit_smoking_year", "rg_pt", "rg_pn", "rg_pm", "rg_grade",
                "rg_lvi", "rg_pleural_invasion", "rg_adjuvant", "rg_chemotherapy",
-               "rg_radiation", "rg_recurrence_location", "ethnicity"]
+               "rg_radiation", "rg_recurrence_location", "ethnicity", "days_ct_to_surgery"]
     va_sub = va[rg_cols].drop_duplicates(subset="patient_id", keep="first")
 
     # join on patient_id (verified 211/211)
@@ -92,6 +108,12 @@ def main():
     # fill weight from VA (66 in v2 -> 152 from VA)
     m["weight_kg"] = m["weight_kg_va"]
     m = m.drop(columns=["weight_kg_va"])
+
+    # R01 unified alias: AMC-xxx -> R01-xxx (used for RG time merge)
+    m["patient_id_r01"] = np.where(
+        m.cohort == "RG",
+        "R01-" + m.patient_id.astype(str).str.replace("AMC-", "", regex=False),
+        m.patient_id)
 
     # fix patient_id_r01 double-prefix bug (R01-R01-xxx -> R01-xxx)
     m.loc[m.cohort == "RG", "patient_id_r01"] = (
