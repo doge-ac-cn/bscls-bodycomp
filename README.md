@@ -1,0 +1,173 @@
+# Fully automated CT body-composition phenotyping in NSCLC
+
+This repository reproduces the complete analysis pipeline of the manuscript
+*"Fully automated CT-derived body composition phenotypes predict overall
+survival in non-small cell lung cancer: a dual-cohort study of 633 patients"*.
+
+We derive body-composition phenotypes (3D skeletal-muscle volume, subcutaneous
+and visceral adipose tissue, muscle density, vertebral bone density, and
+level-specific areas) fully automatically from routine staging CT scans with
+[TotalSegmentator](https://github.com/wasserth/TotalSegmentator), and evaluate
+their association with overall survival in two independent NSCLC cohorts using
+Cox regression, random-effects meta-analysis, and competing-risk (Fine-Gray)
+models.
+
+## Cohorts and data
+
+| Cohort | n | Modality | Median follow-up | Source |
+|---|---|---|---|---|
+| NSCLC-Radiomics (Lung1) | 422 | Chest CT | 9.65 y | [TCIA](https://www.cancerimagingarchive.net/) |
+| NSCLC-Radiogenomics (RG) | 211 | Whole-body PET/CT | 4.15 y | [TCIA](https://www.cancerimagingarchive.net/) |
+
+Both datasets are public:
+
+- **NSCLC-Radiomics (Lung1)** — Aerts HJWL et al. *Nat Commun.* 2014;5:4006.
+  TCIA DOI: `10.7937/K9/TCIA.2015.PF0M9REI`
+- **NSCLC-Radiogenomics** — Bakr S et al. *Sci Data.* 2018;5:180202.
+  TCIA DOI: `10.7937/K9/TCIA.2017.7hs46erv`
+
+Imaging (DICOM) and clinical spreadsheets must be downloaded from TCIA and
+placed under `data/raw/` preserving the TCIA package layout:
+
+```
+data/raw/
+├── NSCLC-Radiomics/          # Lung1 DICOM series
+├── NSCLC-Radiogenomics/      # RG DICOM series
+└── data/
+    ├── clinical/
+    │   ├── NSCLC-Radiomics-Lung1.clinical-version3-Oct-2019.csv
+    │   ├── NSCLC-Radiogenomics-VA-R01-labels.csv
+    │   ├── NSCLC-Radiogenomics-Clinical-SARG.csv
+    │   └── sarg_patients.parquet
+    └── master_table_nsclc_radiogenomics.csv
+```
+
+## Requirements
+
+- Python ≥ 3.10
+- CUDA-capable GPU with ≥ 8 GB VRAM (recommended for segmentation)
+- [dcm2niix](https://github.com/rordenlab/dcm2niix) on `PATH` (or set
+  `DCM2NIIX=/path/to/dcm2niix`)
+- `tcia-utils` (optional; only needed for automatic TCIA download)
+
+```bash
+pip install -r requirements.txt
+```
+
+## Pipeline
+
+Run the steps in order from the repository root. Each script writes to
+`data/` or `outputs/` and is idempotent (safe to re-run).
+
+### 1. Clinical master table
+
+```bash
+python scripts/prepare_clinical_build.py   # merge official spreadsheets -> data/clinical_master.csv
+python scripts/prepare_clinical_time.py    # encode OS/RFS time-to-event in days
+python scripts/prepare_clinical_v3.py      # fix stage semantics, recover weight, add official fields
+python scripts/prepare_clinical_fix.py     # fix ALK mapping and AMC-049 recurrence mis-entry
+python scripts/verify_clinical_data.py     # consistency checks vs official sources
+python scripts/verify_official_missing.py  # per-field missing-value audit vs official files
+```
+
+### 2. CT series selection and segmentation
+
+```bash
+python scripts/scan_series.py              # scan DICOM -> data/series_manifest.json
+python scripts/select_ct_series.py         # pick one CT per patient -> data/selected_ct.json
+python scripts/segmentation_pipeline.py --start 0 --end 633   # dcm2niix + TotalSegmentator
+```
+
+`segmentation_pipeline.py` converts DICOM to NIfTI and runs TotalSegmentator
+(`total` and `tissue_types` tasks) serially with resumable `--start/--end`
+ranges. It is designed for memory-limited machines: run in chunks if needed,
+and do **not** launch multiple workers against the same output directory.
+
+### 3. Feature extraction
+
+```bash
+python scripts/extract_bodycomp.py         # -> data/bodycomp_features.csv
+```
+
+Extracts whole-body 3D volumes (skeletal muscle, SAT, VAT), vertebral-level
+2D areas/densities (L1/L3/T12 with T4/T11 sensitivity), and muscle-specific
+metrics (erector spinae, psoas) with HU filtering (muscle −29 to 150 HU,
+bone 0–600 HU, fat −190 to −30 HU).
+
+### 4. Analyses
+
+| Script | Purpose |
+|---|---|
+| `01_level_consistency.py` | L1 vs L3 measurement agreement (Bland-Altman, correlation, kappa) |
+| `02_primary_survival.py` | Primary OS Cox models + C-index + KM curves |
+| `03_finegray_rfs.py` | Recurrence-free survival with competing risks (Fine-Gray) |
+| `04_dual_cohort_meta.py` | Within-cohort Cox + DerSimonian-Laird random-effects pooling + forest plot |
+| `05_supplementary_analysis.py` | Bootstrap stability, FDR control, median follow-up, QC, chemo stratification, pooled phenotypes |
+| `06_icc_reproducibility.py` | Reproducibility: software test-retest (Dice/ICC) + slice-position sensitivity |
+| `07_missingness.py` | Missing-data pattern analysis |
+
+```bash
+python scripts/01_level_consistency.py
+python scripts/02_primary_survival.py
+python scripts/03_finegray_rfs.py
+python scripts/04_dual_cohort_meta.py
+python scripts/05_supplementary_analysis.py
+python scripts/06_icc_reproducibility.py --analyze-a --analyze-b
+python scripts/07_missingness.py
+```
+
+`06_icc_reproducibility.py` has four modes: `--sample`, `--rerun`
+(re-runs TotalSegmentator on the 30-case sample; slow), `--analyze-a`,
+`--analyze-b`.
+
+### 5. Manuscript figures and tables
+
+```bash
+python scripts/08_manuscript_figures.py    # -> outputs/manuscript_figures/
+```
+
+Reads already-computed result files (notably `outputs/dual_cohort_meta/
+dual_cohort_results.csv`) and renders the study-design diagram, KM curves,
+forest plot, and baseline/primary/phenotype tables.
+
+## Phenotype definitions
+
+All cutoffs are **within-cohort, sex-stratified** (no cross-cohort transfer):
+
+- **Low muscle**: lowest tertile of log 3D whole-body skeletal-muscle volume.
+- **Cachexia-like**: low muscle + below-cohort-median subcutaneous adipose
+  tissue volume.
+- **Sarcopenic obesity**: low muscle + above two-thirds quantile of visceral
+  adipose tissue volume.
+- **Low-muscle-only**: low muscle with neither fat abnormality.
+
+## Primary results (for verification)
+
+- Pooled 3D muscle-volume tertile: HR 1.38 (95% CI 1.12–1.70, p = 0.002,
+  I² = 0%)
+- Cachexia-like pooled: HR 1.48 (95% CI 1.14–1.92, p = 0.003)
+- Sarcopenic obesity pooled: HR 1.55 (95% CI 1.05–2.30, p = 0.029)
+- Low-muscle-only: not significant (HR 1.03, p = 0.85)
+- Recurrence (Fine-Gray): no association (HR 1.04, p = 0.90)
+- Software test-retest: Dice 0.984–0.991; feature ICC 0.987–1.000
+
+## Reproducibility notes
+
+- All random processes use fixed seeds.
+- Segmentation is deterministic (nnU-Net inference); the ICC script re-runs it
+  to demonstrate test-retest stability.
+- Phenotype and cutoff code lives inside each analysis script; cross-checking
+  against `outputs/` JSON files is recommended after each run.
+- Known limitations reported in the manuscript: RG single-cohort effect is
+  directionally consistent but not independently significant (powered for
+  pooled analysis); recurrence (RFS) is negative; C-index increment is small;
+  height was unavailable, so SMI (cm²/m²) could not be computed — absolute
+  volumes with sex stratification are used instead.
+
+## License
+
+Code: MIT (see LICENSE).
+
+The datasets remain under the TCIA Data Usage Agreement of their respective
+collections; derived feature tables produced by this pipeline may be subject
+to those terms.
