@@ -101,9 +101,33 @@ for r in rep["age"]["comparisons"]:
         lines.append(f"| {r['var']} | {r['present_dist']} | {r['missing_dist']} | {r['p']:.3f} |")
 lines.append("")
 lines.append("## Assessment")
-lines.append("- Event rate: missing 90.9% vs non-missing 88.2% - small difference")
-lines.append("- Stage: missing group 40.9% stage I vs non-missing 21.1% (p above) - worth noting, but n=22 only")
-lines.append("- Conclusion: age missingness is small (5.2%) and weakly associated with outcome; primary analysis (n=400) is robust. Sensitivity with stage+sex only (n=422) is available if needed.")
+# dynamic values from the computed report (no hard-coded manuscript numbers)
+miss_n = rep["age"]["missing_n"]
+tot_n = rep["age"]["total_n"]
+miss_pct = 100.0 * miss_n / tot_n if tot_n else 0.0
+ev_miss = rep["age"]["comparisons"]
+def _val(rows, var, key):
+    for r in rows:
+        if r["var"] == var:
+            return r.get(key)
+if miss_n == 0:
+    lines.append(f"- No missing age cases (n={tot_n}); missing-vs-present comparison not applicable")
+else:
+    ev_present = _val(ev_miss, "os_event", "present_dist") or {}
+    ev_missing = _val(ev_miss, "os_event", "missing_dist") or {}
+    stage_missing = rep["age"].get("stage_dist_missing", {})
+    stage_present = rep["age"].get("stage_dist_present", {})
+    sm = sum(stage_missing.values()) or 1
+    sp = sum(stage_present.values()) or 1
+    stageI_miss_pct = 100.0 * stage_missing.get("I", 0) / sm
+    stageI_pres_pct = 100.0 * stage_present.get("I", 0) / sp
+    lines.append(f"- Event rate: missing {ev_missing.get(1.0, 0)*100:.1f}% vs non-missing "
+                 f"{ev_present.get(1.0, 0)*100:.1f}% - small difference")
+    lines.append(f"- Stage: missing group {stageI_miss_pct:.1f}% stage I vs non-missing "
+                 f"{stageI_pres_pct:.1f}% (p above) - worth noting, but n={miss_n} only")
+    lines.append(f"- Conclusion: age missingness is small ({miss_pct:.1f}%) and weakly associated "
+                 f"with outcome; primary analysis (n={tot_n - miss_n}) is robust. "
+                 f"Sensitivity with stage+sex only (n={tot_n}) is available if needed.")
 lines.append("")
 lines.append("## weight")
 lines.append(f"- Lung1 all missing {rep['weight']['Lung1_missing']} (no official height/weight fields available)")

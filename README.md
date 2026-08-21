@@ -230,7 +230,7 @@ forest plot, and baseline/primary/phenotype tables.
 All cutoffs are **within-cohort, sex-stratified** (no cross-cohort transfer):
 
 - **Low muscle**: lowest tertile of log 3D whole-body skeletal-muscle volume.
-- **Cachexia-like**: low muscle + below-cohort-median subcutaneous adipose
+- **Cachexia-like**: low muscle + lowest tertile of subcutaneous adipose
   tissue volume.
 - **Sarcopenic obesity**: low muscle + above two-thirds quantile of visceral
   adipose tissue volume.

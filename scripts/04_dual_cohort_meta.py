@@ -27,8 +27,6 @@ import matplotlib.pyplot as plt
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "outputs", "dual_cohort_meta")
 os.makedirs(OUT, exist_ok=True)
-plt.rcParams["font.sans-serif"] = ["Noto Sans CJK SC", "Noto Sans CJK"]
-plt.rcParams["axes.unicode_minus"] = False
 
 feat = pd.read_csv(os.path.join(ROOT, "data", "bodycomp_features.csv"))
 clin = pd.read_csv(os.path.join(ROOT, "data", "clinical_master.csv"))

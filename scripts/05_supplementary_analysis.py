@@ -20,12 +20,6 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm
-for f in fm.findSystemFonts():
-    if "NotoSansCJK" in f:
-        fm.fontManager.addfont(f)
-plt.rcParams["font.sans-serif"] = ["Noto Sans CJK SC", "Noto Sans CJK JP", "DejaVu Sans"]
-plt.rcParams["axes.unicode_minus"] = False
 from scipy import stats
 from lifelines import CoxPHFitter, KaplanMeierFitter
 from lifelines.statistics import logrank_test

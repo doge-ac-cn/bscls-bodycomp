@@ -297,6 +297,11 @@ def table2_primary():
 # ----------------------------------------------------------------------------
 # Table 3 — phenotype results
 # ----------------------------------------------------------------------------
+# NOTE: rows below are the final manuscript numbers (locked after the
+# phenotype-definition audit). They are rendered verbatim (not recomputed) so
+# the table cannot drift from the submitted values. Figure 3 uses the same
+# numbers; Table 1 / Table 2 are computed dynamically from the data.
+# ----------------------------------------------------------------------------
 def table3_phenotypes():
     rows = [
         ["Cachexia-like (low muscle + low fat)", "Lung1", 399, 352, 60, "1.46", "1.09–1.96", "0.011", "age, sex, stage"],

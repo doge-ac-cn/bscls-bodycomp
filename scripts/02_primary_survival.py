@@ -14,13 +14,6 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm
-# CJK font (figure labels)
-for f in fm.findSystemFonts():
-    if "NotoSansCJK" in f or "Noto Sans CJK" in f:
-        fm.fontManager.addfont(f)
-plt.rcParams["font.sans-serif"] = ["Noto Sans CJK SC", "Noto Sans CJK JP", "DejaVu Sans"]
-plt.rcParams["axes.unicode_minus"] = False
 from lifelines import CoxPHFitter
 from lifelines import KaplanMeierFitter
 from lifelines.utils import concordance_index
