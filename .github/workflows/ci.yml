@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  analysis-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install core dependencies
+        run: pip install -r requirements-core.txt
+
+      - name: Syntax check all scripts
+        run: python -m py_compile scripts/*.py
+
+      - name: Generate synthetic demo data (no GPU / no TCIA download)
+        run: python scripts/make_demo_data.py
+
+      - name: Analysis 01 - level consistency
+        run: python scripts/01_level_consistency.py
+
+      - name: Analysis 02 - primary survival (Cox + KM)
+        run: python scripts/02_primary_survival.py
+
+      - name: Analysis 03 - Fine-Gray competing-risk RFS
+        run: python scripts/03_finegray_rfs.py
+
+      - name: Analysis 04 - dual-cohort meta-analysis
+        run: python scripts/04_dual_cohort_meta.py
+
+      - name: Analysis 05 - supplementary analyses (bootstrap, FDR, DCA)
+        run: python scripts/05_supplementary_analysis.py
+
+      - name: Analysis 07 - missing-data patterns
+        run: python scripts/07_missingness.py
+
+      - name: Analysis 08 - manuscript figures and tables
+        run: python scripts/08_manuscript_figures.py

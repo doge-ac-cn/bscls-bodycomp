@@ -1,0 +1,10 @@
+# Minimal dependencies for the analysis layer only (scripts 01-05, 07, 08).
+# No GPU, TotalSegmentator, dcm2niix, or TCIA data required.
+# The full pipeline (segmentation, feature extraction from masks) needs
+# requirements.txt instead.
+numpy>=1.24
+pandas>=2.0
+scipy>=1.10
+scikit-learn>=1.2
+matplotlib>=3.7
+lifelines>=0.27

@@ -1,5 +1,8 @@
 # Fully automated CT body-composition phenotyping in NSCLC
 
+[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
+<!-- Replace OWNER/REPO with your GitHub account/repository name after pushing -->
+
 This repository reproduces the complete analysis pipeline of the manuscript
 *"Fully automated CT-derived body composition phenotypes predict overall
 survival in non-small cell lung cancer: a dual-cohort study of 633 patients"*.
@@ -53,6 +56,34 @@ data/raw/
 ```bash
 pip install -r requirements.txt
 ```
+
+**Analysis-only mode** (no GPU, no segmentation, no TCIA data): install
+`requirements-core.txt` and use the synthetic demo data described below.
+
+## Quick start with synthetic demo data
+
+No imaging data, GPU, or TCIA download is needed to exercise the analysis
+layer (scripts 01–05, 07, 08):
+
+```bash
+pip install -r requirements-core.txt
+python scripts/make_demo_data.py        # 120 synthetic patients (60 Lung1 + 60 RG, sex-balanced)
+python scripts/01_level_consistency.py
+python scripts/02_primary_survival.py
+python scripts/03_finegray_rfs.py
+python scripts/04_dual_cohort_meta.py
+python scripts/05_supplementary_analysis.py
+python scripts/07_missingness.py
+python scripts/08_manuscript_figures.py
+```
+
+`make_demo_data.py` writes `data/clinical_master.csv` and
+`data/bodycomp_features.csv` with the same schema as the real pipeline
+(41 + 65 columns). The values are random draws from plausible ranges with a
+fixed seed; they carry **no scientific meaning** and only verify that the
+pipeline executes end-to-end. Script 06 (ICC reproducibility) requires real
+segmentation masks and is skipped in demo mode. The same sequence runs in
+GitHub Actions CI on every push.
 
 ## Pipeline
 
@@ -191,6 +222,28 @@ All cutoffs are **within-cohort, sex-stratified** (no cross-cohort transfer):
   pooled analysis); recurrence (RFS) is negative; C-index increment is small;
   height was unavailable, so SMI (cm²/m²) could not be computed — absolute
   volumes with sex stratification are used instead.
+
+## Citation
+
+If you use this pipeline, please cite the manuscript:
+
+> Fully automated CT-derived body composition phenotypes predict overall
+> survival in non-small cell lung cancer: a dual-cohort study of 633 patients.
+> *Manuscript in preparation* (target journal: J Cachexia Sarcopenia Muscle).
+
+```bibtex
+@unpublished{bodycomp2026,
+  title  = {Fully automated {CT}-derived body composition phenotypes predict
+            overall survival in non-small cell lung cancer: a dual-cohort
+            study of 633 patients},
+  author = {},
+  note   = {Manuscript in preparation},
+  year   = {2026}
+}
+```
+
+Please also cite the underlying public datasets (see Cohorts and data section)
+and [TotalSegmentator](https://github.com/wasserth/TotalSegmentator).
 
 ## License
 
