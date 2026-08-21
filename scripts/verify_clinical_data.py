@@ -102,6 +102,19 @@ check(rg.ct_date.notna().sum() >= 200, f"RG ct_date >= 200 (got {rg.ct_date.notn
 check(rg.days_ct_to_surgery.notna().sum() == 211, f"RG days_ct_to_surgery = 211 (got {rg.days_ct_to_surgery.notna().sum()})")
 check(clin[clin.cohort == "Lung1"].days_ct_to_surgery.isna().all(), "Lung1 days_ct_to_surgery all NaN (RG-only field)")
 
+print("\n=== 9b. Mutation status values (official labels) ===")
+alk_pos = rg.alk.dropna()
+check(int((alk_pos == 1).sum()) == 2, f"RG ALK+ = 2 (got {(alk_pos == 1).sum()})")
+egfr_pos = rg.egfr.dropna()
+check(int((egfr_pos == 1).sum()) == 43, f"RG EGFR+ = 43 (got {(egfr_pos == 1).sum()})")
+kras_pos = rg.kras.dropna()
+check(int((kras_pos == 1).sum()) == 38, f"RG KRAS+ = 38 (got {(kras_pos == 1).sum()})")
+# official ALK "Translocated" must be 1, never NaN
+va["key"] = va["Patient ID"].astype(str).str.strip()
+trans = va.loc[va["ALK translocation status"].astype(str).str.strip() == "Translocated", "key"]
+trans_master = set(rg.loc[rg.alk == 1, "patient_id"].astype(str).str.strip())
+check(set(trans) == trans_master, f"ALK Translocated {sorted(trans)} all encoded as 1 (got {sorted(trans_master)})")
+
 print("\n=== 10. Official Lung1 patient_id linkage ===")
 l1_ids = set(l1["PatientID"].astype(str).str.strip())
 l1m_ids = set(clin[clin.cohort == "Lung1"].patient_id)

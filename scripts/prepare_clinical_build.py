@@ -71,7 +71,12 @@ def prep_rg():
     df["rfs_event"] = df["rfs_event_raw"].map({"yes": 1, "no": 0, "Not collected": np.nan}).astype("Int64")
     df["rfs_time"] = np.nan  # recurrence time set later (date_of_recurrence - ct_date)
     for c in ["EGFR", "KRAS", "ALK"]:
-        df[c.lower()] = df[c].map({"Mutant": 1, "Wildtype": 0}).astype("Int64")
+        # Official labels encode ALK positivity as "Translocated" (not "Mutant").
+        # Mapping only {"Mutant":1} would silently drop the 2 ALK+ cases.
+        mapping = {"Mutant": 1, "Wildtype": 0}
+        if c == "ALK":
+            mapping["Translocated"] = 1
+        df[c.lower()] = df[c].map(mapping).astype("Int64")
     return df[["patient_id", "cohort", "age", "sex", "stage", "histology", "smoking",
                "os_time", "os_event", "rfs_time", "rfs_event", "egfr", "kras", "alk", "weight_kg"]]
 

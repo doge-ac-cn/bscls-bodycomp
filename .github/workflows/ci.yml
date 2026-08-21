@@ -45,3 +45,33 @@ jobs:
 
       - name: Analysis 08 - manuscript figures and tables
         run: python scripts/08_manuscript_figures.py
+
+  clinical-data-validation:
+    # Validates the real clinical-data pipeline (download -> prepare -> verify)
+    # against the official TCIA spreadsheets. Catches regressions like the
+    # ALK "Translocated" mapping bug, which the synthetic demo cannot detect.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install clinical-pipeline dependencies
+        run: pip install pandas numpy pyarrow
+
+      - name: Download official clinical spreadsheets
+        run: python scripts/download_clinical.py
+
+      - name: Build unified clinical master table
+        run: |
+          python scripts/prepare_clinical_build.py
+          python scripts/prepare_clinical_time.py
+          python scripts/prepare_clinical_v3.py
+          python scripts/prepare_clinical_fix.py
+
+      - name: Verify against official sources
+        run: |
+          python scripts/verify_clinical_data.py
+          python scripts/verify_official_missing.py

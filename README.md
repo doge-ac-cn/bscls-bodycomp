@@ -40,7 +40,6 @@ data/raw/
     ├── clinical/
     │   ├── NSCLC-Radiomics-Lung1.clinical-version3-Oct-2019.csv
     │   ├── NSCLC-Radiogenomics-VA-R01-labels.csv
-    │   ├── NSCLC-Radiogenomics-Clinical-SARG.csv
     │   └── sarg_patients.parquet
     └── master_table_nsclc_radiogenomics.csv
 ```
@@ -134,6 +133,9 @@ python scripts/prepare_clinical_fix.py    # fix ALK mapping and AMC-049 recurren
 python scripts/verify_clinical_data.py    # consistency checks vs official sources
 python scripts/verify_official_missing.py # per-field missing-value audit vs official files
 ```
+
+The clinical pipeline needs `pandas`, `numpy` and `pyarrow` (for the
+`sarg_patients.parquet` auxiliary table).
 
 ### 2. CT series selection and segmentation
 
