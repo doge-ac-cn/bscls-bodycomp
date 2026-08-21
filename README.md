@@ -45,6 +45,23 @@ data/raw/
     └── master_table_nsclc_radiogenomics.csv
 ```
 
+**Automated imaging download** — `download_tcia.py` fetches the DICOM
+series of both cohorts and writes them in the canonical layout shown above
+(patient → series directories, exactly what `scan_series.py` and
+`segmentation_pipeline.py` expect):
+
+```bash
+python scripts/download_tcia.py            # both cohorts
+python scripts/download_tcia.py lung1      # NSCLC-Radiomics only (CT + SEG)
+python scripts/download_tcia.py rg         # NSCLC-Radiogenomics only (CT + PET)
+```
+
+The script is idempotent: already-downloaded series are detected in the
+canonical location and skipped. It reorganises the flat
+`tcia-utils` output into `<PatientID>/<SeriesInstanceUID>/` and flattens any
+nesting introduced by the TCIA zip layout, so the result always matches the
+tree above.
+
 **Automated clinical download** — `download_tcia.py` fetches imaging only;
 the clinical spreadsheets are hosted separately on the TCIA website. Run
 
