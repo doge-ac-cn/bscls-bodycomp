@@ -1,7 +1,6 @@
 # Fully automated CT body-composition phenotyping in NSCLC
 
-[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
-<!-- Replace OWNER/REPO with your GitHub account/repository name after pushing -->
+[![CI](https://github.com/doge-ac-cn/bscls-bodycomp/actions/workflows/ci.yml/badge.svg)](https://github.com/doge-ac-cn/bscls-bodycomp/actions/workflows/ci.yml)
 
 This repository reproduces the complete analysis pipeline of the manuscript
 *"Fully automated CT-derived body composition phenotypes predict overall
