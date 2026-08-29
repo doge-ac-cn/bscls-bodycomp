@@ -241,7 +241,7 @@ All cutoffs are **within-cohort, sex-stratified** (no cross-cohort transfer):
   I² = 0%)
 - Cachexia-like pooled: HR 1.48 (95% CI 1.14–1.92, p = 0.003)
 - Sarcopenic obesity pooled: HR 1.55 (95% CI 1.05–2.30, p = 0.029)
-- Low-muscle-only: not significant (HR 1.03, p = 0.85)
+- Low-muscle-only pooled: HR 0.95 (95% CI 0.71–1.29, p = 0.751)
 - Recurrence (Fine-Gray): no association (HR 1.04, p = 0.90)
 - Software test-retest: Dice 0.984–0.991; feature ICC 0.987–1.000
 

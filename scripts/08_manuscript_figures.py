@@ -106,7 +106,7 @@ def fig1_study_design():
         "Composite phenotypes (mutually exclusive)\n"
         "Cachexia-like (low muscle + low fat)  n=102\n"
         "Sarcopenic obesity (low muscle + high VAT)  n=36\n"
-        "Low-muscle-only  n=56",
+        "Low-muscle-only  n=75",
         fc="#E8F8F5", ec="#117A65")
     box(5.4, 2.2, 4.1, 1.5,
         "Analysis\nCox OS · random-effects pooling\nStage interaction · Fine–Gray RFS\n"
@@ -183,14 +183,15 @@ def fig3_forest():
     add("3D muscle volume, lowest tertile", "Pooled", 1.383, 1.124, 1.700, 0.0021, 611, group="A")
 
     # phenotypes (Lung1 adjusted age/sex/stage; RG adjusted age/sex; merged age/sex/cohort)
-    add("Cachexia-like", "Lung1", 1.463, 1.091, 1.962, 0.011, 399, group="B")
+    add("Cachexia-like", "Lung1", 1.421, 1.058, 1.910, 0.020, 399, group="B")
     add("Cachexia-like", "RG", 1.746, 1.008, 3.022, 0.047, 211, group="B")
     add("Cachexia-like", "Pooled", 1.482, 1.144, 1.920, 0.0029, 611, group="B")
-    add("Sarcopenic obesity", "Lung1", 1.644, 1.040, 2.600, 0.034, 399, group="B")
+    add("Sarcopenic obesity", "Lung1", 1.576, 1.015, 2.447, 0.043, 399, group="B")
     add("Sarcopenic obesity", "RG", 1.407, 0.563, 3.520, 0.465, 211, group="B")
     add("Sarcopenic obesity", "Pooled", 1.549, 1.045, 2.296, 0.0294, 611, group="B")
-    add("Low-muscle-only", "Lung1", 1.031, 0.757, 1.403, 0.846, 399, group="C")
+    add("Low-muscle-only", "Lung1", 1.023, 0.750, 1.397, 0.885, 399, group="C")
     add("Low-muscle-only", "RG", 0.485, 0.149, 1.574, 0.228, 211, group="C")
+    add("Low-muscle-only", "Pooled", 0.953, 0.707, 1.285, 0.751, 611, group="C")
 
     R = pd.DataFrame(rows)
     # fix sarc_obese RG CI (n=13, wide; use supplementary results if available)
@@ -213,12 +214,12 @@ def fig3_forest():
     ax.set_xticks([np.log(t) for t in ticks])
     ax.set_xticklabels([f"{t:g}" for t in ticks])
     ax.set_xlabel("Hazard ratio (95% CI), log scale")
-    # group separators (11 rows -> y 10..0; boundaries at 7.5, 4.5, 1.5)
-    for gpos in [7.5, 4.5, 1.5]:
+    # group separators (12 rows -> y 11..0; boundaries at 8.5, 5.5, 2.5)
+    for gpos in [8.5, 5.5, 2.5]:
         ax.axhline(gpos, ls=":", lw=0.6, color="#aaaaaa")
-    ax.text(np.log(0.25), 9.2, "A  Primary analysis (age + sex adjusted)", fontsize=7.5, style="italic")
-    ax.text(np.log(0.25), 6.2, "B  Composite phenotypes (adjusted; pooled: age + sex + cohort)", fontsize=7.5, style="italic")
-    ax.text(np.log(0.25), 0.6, "C  Reference phenotype (low muscle, normal fat)", fontsize=7.5, style="italic")
+    ax.text(np.log(0.25), 10.2, "A  Primary analysis (age + sex adjusted)", fontsize=7.5, style="italic")
+    ax.text(np.log(0.25), 7.0, "B  Composite phenotypes (adjusted; pooled: age + sex + cohort)", fontsize=7.5, style="italic")
+    ax.text(np.log(0.25), 1.0, "C  Reference phenotype (low muscle, normal fat)", fontsize=7.5, style="italic")
     # HR text
     for y, r in zip(ypos, R.itertuples()):
         ax.text(np.log(r.hi) + 0.08, y, f"{r.hr:.2f} ({r.lo:.2f}–{r.hi:.2f})",
@@ -304,14 +305,15 @@ def table2_primary():
 # ----------------------------------------------------------------------------
 def table3_phenotypes():
     rows = [
-        ["Cachexia-like (low muscle + low fat)", "Lung1", 399, 352, 60, "1.46", "1.09–1.96", "0.011", "age, sex, stage"],
+        ["Cachexia-like (low muscle + low fat)", "Lung1", 399, 352, 57, "1.42", "1.06–1.91", "0.020", "age, sex, stage"],
         ["Cachexia-like (low muscle + low fat)", "RG", 211, 63, 42, "1.75", "1.01–3.02", "0.047", "age, sex"],
         ["Cachexia-like (low muscle + low fat)", "Pooled", 611, 416, 99, "1.48", "1.14–1.92", "0.003", "age, sex, cohort"],
-        ["Sarcopenic obesity (low muscle + high VAT)", "Lung1", 399, 352, 23, "1.64", "1.04–2.60", "0.034", "age, sex, stage"],
+        ["Sarcopenic obesity (low muscle + high VAT)", "Lung1", 399, 352, 23, "1.58", "1.02–2.45", "0.043", "age, sex, stage"],
         ["Sarcopenic obesity (low muscle + high VAT)", "RG", 211, 63, 13, "1.41", "0.56–3.51", "0.465", "age, sex"],
         ["Sarcopenic obesity (low muscle + high VAT)", "Pooled", 611, 416, 36, "1.55", "1.05–2.30", "0.029", "age, sex, cohort"],
-        ["Low-muscle-only (low muscle, normal fat)", "Lung1", 399, 352, 56, "1.03", "0.76–1.40", "0.846", "age, sex, stage"],
+        ["Low-muscle-only (low muscle, normal fat)", "Lung1", 399, 352, 55, "1.02", "0.75–1.40", "0.885", "age, sex, stage"],
         ["Low-muscle-only (low muscle, normal fat)", "RG", 211, 63, 15, "0.49", "0.15–1.57", "0.228", "age, sex"],
+        ["Low-muscle-only (low muscle, normal fat)", "Pooled", 611, 416, 70, "0.95", "0.71–1.29", "0.751", "age, sex, cohort"],
     ]
     T = pd.DataFrame(rows, columns=["Phenotype", "Cohort", "n", "Events", "Phenotype n",
                                     "HR", "95% CI", "p", "Adjustment"])

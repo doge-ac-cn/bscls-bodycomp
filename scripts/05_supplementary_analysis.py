@@ -87,10 +87,12 @@ def build_phenotypes(d):
     d2, lb = make_binary(d.copy(), "log_SMA_vol_cm3", q=1 / 3)
     d3, _ = make_binary(d2, "log_VAT_vol_cm3", q=2 / 3)
     d4, ls = make_binary(d3, "log_SAT_vol_cm3", q=1 / 3)
-    vat_hi = [c for c in d4.columns if c.startswith("log_VAT_vol_cm3_low")][0]
-    d4["pheno_sarc_obese"] = ((d4[lb] == 1) & (d4[vat_hi] == 0)).astype(int)
+    # make_binary uses "< quantile", so the VAT column equals 1 when VAT is
+    # below the 2/3 quantile (i.e. NOT high VAT) and 0 when VAT >= 2/3.
+    vat_low_mid = [c for c in d4.columns if c.startswith("log_VAT_vol_cm3_low")][0]
+    d4["pheno_sarc_obese"] = ((d4[lb] == 1) & (d4[vat_low_mid] == 0)).astype(int)
     d4["pheno_cachexia"] = ((d4[lb] == 1) & (d4[ls] == 1)).astype(int)
-    d4["pheno_low_muscle_only"] = ((d4[lb] == 1) & (d4[ls] == 0) & (d4[vat_hi] == 1)).astype(int)
+    d4["pheno_low_muscle_only"] = ((d4[lb] == 1) & (d4[ls] == 0) & (d4[vat_low_mid] == 1)).astype(int)
     return d4, lb
 
 
