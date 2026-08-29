@@ -264,7 +264,7 @@ If you use this pipeline, please cite the manuscript:
 
 > Fully automated CT-derived body composition phenotypes predict overall
 > survival in non-small cell lung cancer: a dual-cohort study of 633 patients.
-> *Manuscript in preparation* (target journal: J Cachexia Sarcopenia Muscle).
+> *Manuscript in preparation* (target journal: European Journal of Radiology).
 
 ```bibtex
 @unpublished{bodycomp2026,
