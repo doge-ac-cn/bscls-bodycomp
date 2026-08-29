@@ -321,6 +321,7 @@ def sec_F(df):
     d, _ = build_phenotypes(lung1)
     out = {"bootstrap": {}, "km": {}, "nnh": {}}
     for lab in ["pheno_cachexia"]:
+        np.random.seed(42)  # reproducible bootstrap (independent of other sections)
         out["bootstrap"][lab] = bootstrap_hr(d, lab, B=1000, adj_cols=ADJ_L1)
         rows, lrp = km_absolute_diff(d, lab, years=(5,))
         out["km"][lab] = {"rows": rows, "logrank_p": round(lrp, 4) if lrp is not None else None}
@@ -354,22 +355,22 @@ def sec_G(df):
         # KM for cachexia (Table 4)
         rows, lrp = km_absolute_diff(sub, "pheno_cachexia", years=(5,))
         out["cachexia"][name + "_km"] = {"rows": rows, "logrank_p": round(lrp, 4) if lrp is not None else None}
-    # stage x muscle interaction (full cohort)
-    d["stage_III"] = (d.stage_n == 3).astype(int)
-    d["muscle_x_stageIII"] = d[lb] * d["stage_III"]
-    cols = ["os_time", "os_event", lb, "muscle_x_stageIII", "stage_III"] + ["age", "sex_m"]
+    # stage x muscle interaction (full cohort; low muscle x stage I-II)
+    d["stage_I_II"] = (d.stage_n <= 2).astype(int)
+    d["muscle_x_stage12"] = d[lb] * d["stage_I_II"]
+    cols = ["os_time", "os_event", lb, "muscle_x_stage12", "stage_I_II"] + ["age", "sex_m"]
     sub = d[cols].dropna()
-    if len(sub) >= 60 and sub["muscle_x_stageIII"].nunique() >= 2:
+    if len(sub) >= 60 and sub["muscle_x_stage12"].nunique() >= 2:
         try:
             cph = CoxPHFitter()
             cph.fit(sub, duration_col="os_time", event_col="os_event")
             out["interaction"] = {"n": int(sub.shape[0]), "events": int(sub.os_event.sum()),
                                   "muscle_HR": float(cph.hazard_ratios_[lb]),
                                   "muscle_p": float(cph.summary.loc[lb, "p"]),
-                                  "interaction_HR": float(cph.hazard_ratios_["muscle_x_stageIII"]),
-                                  "interaction_p": float(cph.summary.loc["muscle_x_stageIII", "p"]),
-                                  "stageIII_HR": float(cph.hazard_ratios_["stage_III"]),
-                                  "stageIII_p": float(cph.summary.loc["stage_III", "p"])}
+                                  "interaction_HR": float(cph.hazard_ratios_["muscle_x_stage12"]),
+                                  "interaction_p": float(cph.summary.loc["muscle_x_stage12", "p"]),
+                                  "stage_I_II_HR": float(cph.hazard_ratios_["stage_I_II"]),
+                                  "stage_I_II_p": float(cph.summary.loc["stage_I_II", "p"])}
         except Exception:
             out["interaction"] = None
     return out
@@ -415,6 +416,7 @@ def sec_I(df):
 # ----------------------------------------------------------------------------
 def sec_J(df, B=400):
     out = {}
+    np.random.seed(42)  # reproducible bootstrap (matches the manuscript run)
     for name, sub, covs, pooled in [
         ("Lung1", df[df.cohort == "Lung1"], ADJ_L1, False),
         ("Pooled", df, ADJ_POOL, True),
@@ -588,6 +590,7 @@ def sec_L(df, B_boot=500):
     # bootstrap CI for early-stage increment at pt=0.5
     early = build_phenotypes(lung1[lung1.stage_n <= 2].copy())[0]
     if len(early) >= 30:
+        np.random.seed(42)  # reproducible bootstrap (matches the manuscript run)
         incs = {lab: [] for lab in ["log_SMA_vol_cm3_low0.3333333333333333", "pheno_cachexia"]}
         for b in range(B_boot):
             idx            = np.random.choice(len(early), size=len(early), replace=True)
@@ -674,6 +677,11 @@ def sec_M(df):
     out["coverage_counts"] = {
         "Lung1_non_extended": int(((df.cohort == "Lung1") & (df.coverage_extended == 0)).sum()),
         "RG_extended": int(((df.cohort == "RG") & (df.coverage_extended == 1)).sum()),
+    }
+    out["T4_availability"] = {
+        "n_available": int(df["SMA_T4_cm2"].notna().sum()),
+        "n_total": int(len(df)),
+        "pct_available": round(100 * df["SMA_T4_cm2"].notna().mean(), 1),
     }
     return out
 
