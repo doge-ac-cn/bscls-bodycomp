@@ -178,24 +178,42 @@ def fig3_forest():
                          n=n, style=style, group=group))
 
     # primary metric (from dual_cohort_meta results)
-    add("3D muscle volume, lowest tertile", "Lung1", 1.378, 1.099, 1.728, 0.0054, 400, group="A")
-    add("3D muscle volume, lowest tertile", "RG", 1.406, 0.844, 2.342, 0.191, 211, group="A")
-    add("3D muscle volume, lowest tertile", "Pooled", 1.383, 1.124, 1.700, 0.0021, 611, group="A")
+    d04 = pd.read_csv(os.path.join(ROOT, "outputs", "dual_cohort_meta",
+                                   "dual_cohort_results.csv"))
+    d04 = d04[(d04["metric"] == "3D whole-body muscle volume log(cm3)") &
+              (d04["cutoff"] == "tertile") & (d04["model"].isin(["adjusted age+sex", "random-effects meta"]))]
+    for _, r in d04.iterrows():
+        def _ci(v):
+            try:
+                nums = [float(x.strip()) for x in str(v).strip("[]").split(",")]
+                return nums[0], nums[1]
+            except Exception:
+                return float(r["HR"]), float(r["HR"])
+        lo, hi = _ci(r["CI95"])
+        add("3D muscle volume, lowest tertile", str(r["cohort"]),
+            float(r["HR"]), lo, hi, float(r["p"]), int(r["n"]) if r["n"] == r["n"] else 0,
+            group="A")
 
     # phenotypes (Lung1 adjusted age/sex/stage; RG adjusted age/sex; merged age/sex/cohort)
-    add("Cachexia-like", "Lung1", 1.421, 1.058, 1.910, 0.020, 399, group="B")
-    add("Cachexia-like", "RG", 1.746, 1.008, 3.022, 0.047, 211, group="B")
-    add("Cachexia-like", "Pooled", 1.482, 1.144, 1.920, 0.0029, 611, group="B")
-    add("Sarcopenic obesity", "Lung1", 1.576, 1.015, 2.447, 0.043, 399, group="B")
-    add("Sarcopenic obesity", "RG", 1.407, 0.563, 3.520, 0.465, 211, group="B")
-    add("Sarcopenic obesity", "Pooled", 1.549, 1.045, 2.296, 0.0294, 611, group="B")
-    add("Low-muscle-only", "Lung1", 1.023, 0.750, 1.397, 0.885, 399, group="C")
-    add("Low-muscle-only", "RG", 0.485, 0.149, 1.574, 0.228, 211, group="C")
-    add("Low-muscle-only", "Pooled", 0.953, 0.707, 1.285, 0.751, 611, group="C")
+    # read from the reproducibility supplement (script 09) so the figure cannot
+    # drift from Table 3 / the manuscript numbers.
+    t3 = _load_table3()
+    short = {"Cachexia-like (low muscle + low subcutaneous fat)": "Cachexia-like",
+             "Sarcopenic obesity (imaging-defined; low muscle + high VAT)": "Sarcopenic obesity",
+             "Low-muscle-only (low muscle, normal fat)": "Low-muscle-only"}
+    for _, r in t3.iterrows():
+        hr = float(r["HR"])
+        ci_str = str(r["95% CI"])
+        sep = "–" if "–" in ci_str else "-"
+        try:
+            lo = float(ci_str.split(sep)[0])
+            hi = float(ci_str.split(sep)[1])
+        except Exception:
+            lo, hi = hr, hr
+        add(short.get(str(r["Phenotype"]), str(r["Phenotype"])), str(r["Cohort"]),
+            hr, lo, hi, float(r["p"]), int(r["n"]), group="B" if r["Phenotype"].startswith(("Cachexia", "Sarcopenic")) else "C")
 
     R = pd.DataFrame(rows)
-    # fix sarc_obese RG CI (n=13, wide; use supplementary results if available)
-    R.loc[(R.label == "Sarcopenic obesity") & (R.cohort == "RG"), ["lo", "hi"]] = [0.563, 3.520]
 
     fig, ax = plt.subplots(figsize=(6.4, 4.2))
     ypos = np.arange(len(R))[::-1]
@@ -272,6 +290,15 @@ def table1_baseline():
 # ----------------------------------------------------------------------------
 # Table 2 — primary Cox results
 # ----------------------------------------------------------------------------
+def _load_repro_results():
+    p = os.path.join(ROOT, "outputs", "supplementary", "reproducibility_results.json")
+    if not os.path.exists(p):
+        raise FileNotFoundError(
+            f"{p} not found. Run scripts/09_supplementary_reproducibility.py first.")
+    with open(p, encoding="utf-8") as f:
+        return json.load(f)
+
+
 def table2_primary():
     d = pd.read_csv(os.path.join(ROOT, "outputs", "dual_cohort_meta",
                                  "dual_cohort_results.csv"))
@@ -292,31 +319,46 @@ def table2_primary():
     keep["events"] = keep["events"].fillna("—")
     out = keep.drop(columns=["HR", "CI95"]).rename(columns={"metric": "Metric", "cutoff": "Cutoff",
                                                             "cohort": "Cohort"})
+
+    # Prepend the per-SD continuous rows (computed by script 09)
+    rep = _load_repro_results()
+    per_sd = rep.get("A_continuous_perSD", {})
+    sd_rows = []
+    for cohort in ["Lung1", "RG", "Pooled"]:
+        r = per_sd.get(cohort)
+        if not r:
+            continue
+        sd_rows.append({
+            "Metric": "3D whole-body muscle volume log(cm3)",
+            "Cutoff": "Continuous, per SD",
+            "Cohort": cohort,
+            "n": r["n"], "events": r["events"],
+            "p": f"{r['p']:.3f}" if r["p"] >= 0.001 else "<0.001",
+            "HR (95% CI)": f"{r['HR_per_SD']:.2f} ({r['CI95'][0]:.2f}–{r['CI95'][1]:.2f})",
+        })
+    if sd_rows:
+        out = pd.concat([pd.DataFrame(sd_rows), out], ignore_index=True)
+
     out.to_csv(os.path.join(OUT, "Table2_primary_cox.csv"), index=False)
     print(out.to_string(index=False))
 
 # ----------------------------------------------------------------------------
 # Table 3 — phenotype results
 # ----------------------------------------------------------------------------
-# NOTE: rows below are the final manuscript numbers (locked after the
-# phenotype-definition audit). They are rendered verbatim (not recomputed) so
-# the table cannot drift from the submitted values. Figure 3 uses the same
-# numbers; Table 1 / Table 2 are computed dynamically from the data.
+# Table 3 is read from the reproducibility supplement (script 09), which
+# recomputes every phenotype row from the data tables. This keeps the table
+# in sync with the manuscript numbers without hard-coding them here.
 # ----------------------------------------------------------------------------
+def _load_table3():
+    p = os.path.join(ROOT, "outputs", "supplementary", "Table3_phenotypes.csv")
+    if not os.path.exists(p):
+        raise FileNotFoundError(
+            f"{p} not found. Run scripts/09_supplementary_reproducibility.py first.")
+    return pd.read_csv(p)
+
+
 def table3_phenotypes():
-    rows = [
-        ["Cachexia-like (low muscle + low fat)", "Lung1", 399, 352, 57, "1.42", "1.06–1.91", "0.020", "age, sex, stage"],
-        ["Cachexia-like (low muscle + low fat)", "RG", 211, 63, 42, "1.75", "1.01–3.02", "0.047", "age, sex"],
-        ["Cachexia-like (low muscle + low fat)", "Pooled", 611, 416, 99, "1.48", "1.14–1.92", "0.003", "age, sex, cohort"],
-        ["Sarcopenic obesity (low muscle + high VAT)", "Lung1", 399, 352, 23, "1.58", "1.02–2.45", "0.043", "age, sex, stage"],
-        ["Sarcopenic obesity (low muscle + high VAT)", "RG", 211, 63, 13, "1.41", "0.56–3.51", "0.465", "age, sex"],
-        ["Sarcopenic obesity (low muscle + high VAT)", "Pooled", 611, 416, 36, "1.55", "1.05–2.30", "0.029", "age, sex, cohort"],
-        ["Low-muscle-only (low muscle, normal fat)", "Lung1", 399, 352, 55, "1.02", "0.75–1.40", "0.885", "age, sex, stage"],
-        ["Low-muscle-only (low muscle, normal fat)", "RG", 211, 63, 15, "0.49", "0.15–1.57", "0.228", "age, sex"],
-        ["Low-muscle-only (low muscle, normal fat)", "Pooled", 611, 416, 70, "0.95", "0.71–1.29", "0.751", "age, sex, cohort"],
-    ]
-    T = pd.DataFrame(rows, columns=["Phenotype", "Cohort", "n", "Events", "Phenotype n",
-                                    "HR", "95% CI", "p", "Adjustment"])
+    T = _load_table3()
     T.to_csv(os.path.join(OUT, "Table3_phenotypes.csv"), index=False)
     print(T.to_string(index=False))
 

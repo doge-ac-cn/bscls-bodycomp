@@ -43,6 +43,9 @@ jobs:
       - name: Analysis 07 - missing-data patterns
         run: python scripts/07_missingness.py
 
+      - name: Analysis 09 - supplementary reproducibility (all manuscript numbers)
+        run: python scripts/09_supplementary_reproducibility.py
+
       - name: Analysis 08 - manuscript figures and tables
         run: python scripts/08_manuscript_figures.py
 

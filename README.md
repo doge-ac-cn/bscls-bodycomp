@@ -94,7 +94,7 @@ pip install -r requirements.txt
 ## Quick start with synthetic demo data
 
 No imaging data, GPU, or TCIA download is needed to exercise the analysis
-layer (scripts 01–05, 07, 08):
+layer (scripts 01–05, 07–09):
 
 ```bash
 pip install -r requirements-core.txt
@@ -105,6 +105,7 @@ python scripts/03_finegray_rfs.py
 python scripts/04_dual_cohort_meta.py
 python scripts/05_supplementary_analysis.py
 python scripts/07_missingness.py
+python scripts/09_supplementary_reproducibility.py
 python scripts/08_manuscript_figures.py
 ```
 
@@ -199,6 +200,7 @@ bone 0–600 HU, fat −190 to −30 HU).
 | `05_supplementary_analysis.py` | Bootstrap stability, FDR control, median follow-up, QC, chemo stratification, pooled phenotypes |
 | `06_icc_reproducibility.py` | Reproducibility: software test-retest (Dice/ICC) + slice-position sensitivity |
 | `07_missingness.py` | Missing-data pattern analysis |
+| `09_supplementary_reproducibility.py` | Full reproducibility supplement: per-SD HR, stage-adjusted sensitivity, dose-response trend, cohort interaction, Lung1 phenotypes, stage-stratified analyses, cutoff robustness, C-index optimism correction, IPCW Brier, decision-curve analysis, coverage/T4 sensitivity, smoking sensitivity, multiple imputation, EGFR analysis, phenotype FDR; writes Table 3 / Table 4 data read by script 08 |
 
 ```bash
 python scripts/01_level_consistency.py
@@ -208,6 +210,7 @@ python scripts/04_dual_cohort_meta.py
 python scripts/05_supplementary_analysis.py
 python scripts/06_icc_reproducibility.py --analyze-a --analyze-b
 python scripts/07_missingness.py
+python scripts/09_supplementary_reproducibility.py
 ```
 
 `06_icc_reproducibility.py` has four modes: `--sample`, `--rerun`
@@ -217,12 +220,16 @@ python scripts/07_missingness.py
 ### 5. Manuscript figures and tables
 
 ```bash
-python scripts/08_manuscript_figures.py    # -> outputs/manuscript_figures/
+python scripts/09_supplementary_reproducibility.py  # first: Table 3 / Table 4 data
+python scripts/08_manuscript_figures.py             # -> outputs/manuscript_figures/
 ```
 
-Reads already-computed result files (notably `outputs/dual_cohort_meta/
-dual_cohort_results.csv`) and renders the study-design diagram, KM curves,
-forest plot, and baseline/primary/phenotype tables.
+Script 08 reads already-computed result files (`outputs/dual_cohort_meta/
+dual_cohort_results.csv`, `outputs/supplementary/Table3_phenotypes.csv`
+written by script 09) and renders the study-design diagram, KM curves,
+forest plot, and baseline/primary/phenotype tables. The phenotype rows in
+Table 3 / Figure 3 are computed from the data by script 09, so they stay in
+sync with the manuscript numbers without hard-coding.
 
 ## Phenotype definitions
 
